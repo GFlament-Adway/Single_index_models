@@ -29,13 +29,13 @@ def NW(X, Y, betas, kernel_b = 1):
     :return: Nadaraya Watson estimate.
     """
 
-    df_theta_x_ = pd.DataFrame.from_dict({"X_theta": X.dot(betas)})
+    df_theta_x_ = pd.DataFrame.from_dict({"X_theta": X.dot(betas)}) #Compute $X^T \beta$
     mat = kernel(generate_kernel_matrix(df_theta_x_.iloc[:,0]), mu=0, bandwidth=kernel_b)
     denum = mat.sum(axis = 1)
     num = np.matmul(kernel(mat), Y.iloc[:,0])
     return num/denum
 
-
+"""
 class KernelReg():
     def __init__(self, X, Y, init_bandwidth):
         self.Y = Y
@@ -51,3 +51,4 @@ class KernelReg():
     
     def pred(self, x_new):
         pass
+"""

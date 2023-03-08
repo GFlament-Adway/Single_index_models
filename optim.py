@@ -5,15 +5,17 @@ from KernelReg import kernel, generate_kernel_matrix, NW
 
 
 class Kernel_Reg:
-    def __init__(self, X, Y, starting_betas = None, bw = None, n_it = None):
+    def __init__(self, X, Y, starting_betas = None, bw = None, n_it = None, reg_type="c"):
         """
         :param X: dataframe that contains the features.
         :param Y: dataframe that contains Y values.
         :param starting_betas: betas that needs to be estimated
         :param bw: Float that contains the bandwidth of the kernel.
+        :param reg_type: integer 'cont' for linear regression, 'binary' for categorial
         """
         self.X = X
         self.Y = Y
+        self.reg_type = reg_type
         if starting_betas is None:
             starting_betas = [np.random.uniform(0, 1) for _ in range(len(self.X.columns))]
         self.betas = starting_betas
@@ -25,7 +27,12 @@ class Kernel_Reg:
         self.n_it = n_it
 
     def loss__(self, y, x):
-        return (y-x)**2
+        if self.reg_type == "c":
+            return (y-x)**2
+
+        if self.reg_type == "binary":
+            x = np.clip(x, 0,1)
+            return (np.log(x)*y + (1 - np.log(x))*(1-y))
     
     def evaluate(self, x_new):
         print(self.bw)

@@ -31,7 +31,8 @@ class Kernel_Reg:
             return (y-x)**2
 
         if self.reg_type == "binary":
-            return -(np.log(x)*y + (1 - np.log(x))*(1-y))
+            x = np.clip(x, 0,1)
+            return (np.log(x)*y + (1 - np.log(x))*(1-y))
     
     def evaluate(self, x_new):
         print(self.bw)

@@ -7,8 +7,7 @@ def f(x):
 
 def sigmoid(x, threshold = 0.5):
     p = np.exp(x)/(1 + np.exp(x))
-    return p
-    #return np.where(p > threshold, 1, 0)
+    return np.where(p > threshold, 1, 0)
 
 def get_data(n=1000, true_beta = [3,1], link_func = f, Y_type="c"):
     """

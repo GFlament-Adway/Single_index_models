@@ -8,20 +8,17 @@ import matplotlib.pyplot as plt
 import multiprocessing as mp
 
 if __name__ == "__main__":
-    np.random.seed(123456)
-    n_test = 10
-    n_sample = 3
+    np.random.seed(12345)
+    n_test = 3
+    n_sample = 100
     n_ind = 100
     reg_type = "c"
-    link_func = sigmoid
+    link_func = f
     true_beta = [3, 1]
     starting_beta = [0, 0]
 
     X, Y, betas = get_data(n=1000, true_beta=true_beta, link_func=link_func, Y_type=reg_type)
 
-    plt.figure()
-    plt.plot(Y)
-    plt.show()
     X_low = X.dot(true_beta).quantile(0.0025)
     X_up = X.dot(true_beta).quantile(0.975)
 

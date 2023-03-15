@@ -3,26 +3,32 @@ import pandas as pd
 from gen_data import get_data, f, sigmoid
 import numpy as np
 from optim import Kernel_Reg
-from statsmodels.nonparametric.kernel_regression import KernelReg
+from statsmodels.nonparametric import kernel_regression
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 
 if __name__ == "__main__":
     np.random.seed(12345)
     n_test = 3
-    n_sample = 100
-    n_ind = 100
-    reg_type = "c"
-    link_func = f
+    n_sample = 10
+    n_ind = 1000
+    reg_type = "binary"
+    link_func = sigmoid
+
+    assert [reg_type, link_func] == ["binary", sigmoid] or [reg_type, link_func] == ["c", f]
     true_beta = [3, 1]
     starting_beta = [0, 0]
 
     X, Y, betas = get_data(n=1000, true_beta=true_beta, link_func=link_func, Y_type=reg_type)
 
+    print("Mean value of  Y :", np.mean(Y["Y"]))
+
+
+
     X_low = X.dot(true_beta).quantile(0.0025)
     X_up = X.dot(true_beta).quantile(0.975)
 
-    integral_interval = np.linspace(X_low, X_up, num=10000)
+    integral_interval = np.linspace(X_low, X_up, num=1000)
 
     starting_betas = [[beta + np.random.normal(0, 0.5, 1)[0] for beta in starting_beta] for _ in range(n_test)]
 
@@ -47,15 +53,14 @@ if __name__ == "__main__":
                 best_KR_model = KR
 
         # Estimating \hat{\phi}
-        model = KernelReg(Y["Y"], X.dot(df_scaled_betas.loc[i].values).to_numpy(), var_type="c")
-        # pred = model.fit()[0]
-
-        pred = model.fit(integral_interval)[0]
-
-        ise = KR.ise(pred, link_func(integral_interval), integral_interval)
-        df_ise.loc[i] = ise
         df_scaled_betas.loc[i] = KR.scaled_betas
-        print("ISE : ", ise)
+
+        if reg_type == "c":
+            model = kernel_regression.KernelReg(Y["Y"], X.dot(df_scaled_betas.loc[i].values).to_numpy(), var_type="c")
+            pred = model.fit(integral_interval)[0]
+            ise = KR.ise(pred, link_func(integral_interval), integral_interval)
+            df_ise.loc[i] = ise
+            print("ISE : ", ise)
         print("best solution for that sample : ", KR.loss)
         print("betas : ", df_e_betas.loc[i].values)
         print("scaled betas :", df_scaled_betas.loc[i].values)
@@ -68,4 +73,4 @@ if __name__ == "__main__":
 
     fig = plt.figure()
     df_scaled_betas.boxplot(showfliers=False)
-    fig.savefig("images/generated_images/scaled_betas.png".format(n_sample=n_sample))
+    fig.savefig("images/generated_images/scaled_betas_n_sample_{n_sample}_n_ind_{n_ind}.png".format(n_sample=n_sample, n_ind=n_ind))

@@ -34,7 +34,7 @@ class Kernel_Reg:
             x = np.clip(x, 0,1)
             return (np.log(x)*y + (1 - np.log(x))*(1-y))
     
-    def evaluate(self, x_new):
+    def pred(self, x_new):
         print(self.bw)
         print(self.betas)
         return NW(x_new, self.Y, self.betas, self.bw)

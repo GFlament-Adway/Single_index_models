@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Mar  3 11:18:04 2023
-
 @author: guillaume.flament_ad
 """
 
@@ -16,6 +15,12 @@ def generate_kernel_matrix(x):
 
 
 def kernel(u, mu=0, bandwidth=1):
+    """
+    :param u:
+    :param mu:
+    ...
+    Leave one out grâce à -diag.
+    """
     kernel_mat = np.maximum(stats.norm.pdf(u, loc=mu, scale=bandwidth), 10e-50)
     try:
         diag = np.diag(kernel_mat.diagonal())
@@ -79,8 +84,11 @@ class KernelReg():
         loo_y = [self.y.iloc[loo__[k], :] for k in range(len(loo__))]
         err = 0
         for k in range(len(loo_x)):
+            #Least square cv.
             err += (self.y["Y"][k] - self.NWE(self.x.iloc[k].dot(self.betas), loo_x[k], loo_y[k],
                                               bandwidth=bandwidth)) ** 2
+            #Other likelihood CV.
+            #err += likelihood.
         return err
 
     def fit(self):
@@ -93,7 +101,7 @@ class KernelReg():
 
 
 if __name__ == "__main__":
-    from gen_data import get_data, f
+    from gen_data import get_data, first_test
     from scipy.optimize import fmin
     import matplotlib.pyplot as plt
     from statsmodels.nonparametric import kernel_regression
@@ -102,13 +110,14 @@ if __name__ == "__main__":
     time_start_own_package = time.time()
     init_betas = [3, 1]
     n_ind = 1000
-    X, Y, betas = get_data(n=n_ind, true_beta=init_betas, link_func=f, Y_type="c")
+    X, Y, betas = get_data(n=n_ind, true_beta=init_betas, link_func=first_test, Y_type="c")
 
     X_low = X.dot(init_betas).quantile(0.0025)
     X_up = X.dot(init_betas).quantile(0.975)
 
     integral_interval = np.linspace(X_low, X_up, num=1000)
-
+    
+    
     KR = KernelReg(X, Y, init_betas, 1.06 * np.std(X.dot(betas).to_numpy()) * n_ind ** (- 1. / (4 + len(X.columns))))
     KR.fit()
     time_end_own_package = time.time()
@@ -116,7 +125,7 @@ if __name__ == "__main__":
     print("bandwidth found by own package : ", KR.bandwidth)
     print("Time to compute for our package :", time_end_own_package - time_start_own_package)
     fitted_values = KR.pred(x_new=integral_interval)
-
+    
     time_start_statsmod = time.time()
     mod = kernel_regression.KernelReg(Y["Y"], X.dot(betas).to_numpy(), var_type="c", reg_type="lc")
     fitted_mod = mod.fit(integral_interval)
@@ -133,3 +142,5 @@ if __name__ == "__main__":
     plt.legend()
     plt.plot()
     plt.show()
+    
+    

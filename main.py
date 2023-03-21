@@ -1,19 +1,57 @@
 import pandas as pd
 
-from gen_data import get_data, f, sigmoid
+from gen_data import get_data, first_test, sigmoid
 import numpy as np
 from optim import Kernel_Reg
-from statsmodels.nonparametric.kernel_regression import KernelReg
 import matplotlib.pyplot as plt
 import multiprocessing as mp
+import time
+from statsmodels.nonparametric import kernel_regression
 
-if __name__ == "__main__":
+def test_bandwidth():
+    time_start_own_package = time.time()
+    init_betas = [3, 1]
+    n_ind = 1000
+    X, Y, betas = get_data(n=n_ind, true_beta=init_betas, link_func=first_test, Y_type="c")
+
+    X_low = X.dot(init_betas).quantile(0.0025)
+    X_up = X.dot(init_betas).quantile(0.975)
+
+    integral_interval = np.linspace(X_low, X_up, num=1000)
+    KR = Kernel_Reg(X, Y, init_betas, 1.06 * np.std(X.dot(betas).to_numpy()) * n_ind ** (- 1. / (4 + len(X.columns))))
+    KR.fit()
+    time_end_own_package = time.time()
+    print("init bw : ", 16 * np.std(X.dot(betas).to_numpy()) * n_ind ** (- 1. / (4 + len(X.columns))))
+    print("bandwidth found by own package : ", KR.bw)
+    print("Time to compute for our package :", time_end_own_package - time_start_own_package)
+    #fitted_values = KR.pred(x_new=integral_interval)
+
+    time_start_statsmod = time.time()
+    mod = kernel_regression.KernelReg(Y["Y"], X.dot(betas).to_numpy(), var_type="c", reg_type="lc")
+    fitted_mod = mod.fit(integral_interval)
+    time_end_statsmod = time.time()
+
+    print("Bandwidth found by Statsmodel package : ", mod.bw)
+    print("Time to compute for Statsmodel package : ", time_end_statsmod - time_start_statsmod)
+
+    plt.figure()
+
+    plt.scatter(X.dot(betas), Y["Y"], label="Observed", s=0.1)
+    plt.plot(integral_interval, fitted_values, label="Own package", linestyle=(0, (1,1)))
+    plt.plot(integral_interval, fitted_mod[0], label="Statsmodel package", linestyle=(0, (1, 3)))
+    plt.legend()
+    plt.plot()
+    plt.show()
+    
+    
+def test_convergence():
+    
     np.random.seed(12345)
     n_test = 3
-    n_sample = 100
+    n_sample = 10
     n_ind = 100
     reg_type = "c"
-    link_func = f
+    link_func = first_test
     true_beta = [3, 1]
     starting_beta = [0, 0]
 
@@ -69,3 +107,6 @@ if __name__ == "__main__":
     fig = plt.figure()
     df_scaled_betas.boxplot(showfliers=False)
     fig.savefig("images/generated_images/scaled_betas.png".format(n_sample=n_sample))
+
+if __name__ == "__main__":
+    test_bandwidth()    

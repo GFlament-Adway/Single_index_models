@@ -29,6 +29,23 @@ def kernel(u, mu=0, bandwidth=1):
     return kernel_mat - diag
 
 
+def NW_hazard(X, Y, betas, kernel_b=1):
+    """
+    :param X: dataframe that contains the features.
+    :param Y: dataframe that contains Y values.
+    :param kernel_b: Float that contains the bandwidth of the kernel.
+    :return: Nadaraya Watson estimate.
+    """
+
+    #X = pd.DataFrame(np.array([X[int(Y[i]) - 1, i, :] for i in range(X.shape[1])]))
+    df_theta_x_ = pd.DataFrame(np.matmul(X, betas))  # Compute $X^T \beta$
+
+    mat = kernel(generate_kernel_matrix(df_theta_x_.iloc[:, 0]), mu=0, bandwidth=kernel_b)
+    denum = mat.sum(axis=1)
+    num = np.matmul(Y, mat)
+    return num / denum
+
+
 def NW(X, Y, betas, kernel_b=1):
     """
     :param X: dataframe that contains the features.
@@ -40,6 +57,7 @@ def NW(X, Y, betas, kernel_b=1):
     df_theta_x_ = pd.DataFrame.from_dict({"X_theta": X.dot(betas)})  # Compute $X^T \beta$
     mat = kernel(generate_kernel_matrix(df_theta_x_.iloc[:, 0]), mu=0, bandwidth=kernel_b)
     denum = mat.sum(axis=1)
+    print(mat.shape, Y.shape)
     num = np.matmul(mat, Y.iloc[:, 0])
     return num / denum
 
@@ -84,15 +102,15 @@ class KernelReg():
         loo_y = [self.y.iloc[loo__[k], :] for k in range(len(loo__))]
         err = 0
         for k in range(len(loo_x)):
-            #Least square cv.
+            # Least square cv.
             err += (self.y["Y"][k] - self.NWE(self.x.iloc[k].dot(self.betas), loo_x[k], loo_y[k],
                                               bandwidth=bandwidth)) ** 2
-            #Other likelihood CV.
-            #err += likelihood.
+            # Other likelihood CV.
+            # err += likelihood.
         return err
 
     def fit(self):
-        self.bandwidth = fmin(KR.cv, self.bandwidth, maxiter = 1000)[0]
+        self.bandwidth = fmin(KR.cv, self.bandwidth, maxiter=1000)[0]
 
     def pred(self, x_new=None):
         if x_new is not None:
@@ -116,8 +134,7 @@ if __name__ == "__main__":
     X_up = X.dot(init_betas).quantile(0.975)
 
     integral_interval = np.linspace(X_low, X_up, num=1000)
-    
-    
+
     KR = KernelReg(X, Y, init_betas, 1.06 * np.std(X.dot(betas).to_numpy()) * n_ind ** (- 1. / (4 + len(X.columns))))
     KR.fit()
     time_end_own_package = time.time()
@@ -125,7 +142,7 @@ if __name__ == "__main__":
     print("bandwidth found by own package : ", KR.bandwidth)
     print("Time to compute for our package :", time_end_own_package - time_start_own_package)
     fitted_values = KR.pred(x_new=integral_interval)
-    
+
     time_start_statsmod = time.time()
     mod = kernel_regression.KernelReg(Y["Y"], X.dot(betas).to_numpy(), var_type="c", reg_type="lc")
     fitted_mod = mod.fit(integral_interval)
@@ -137,10 +154,8 @@ if __name__ == "__main__":
     plt.figure()
 
     plt.scatter(X.dot(betas), Y["Y"], label="Observed", s=0.1)
-    plt.plot(integral_interval, fitted_values, label="Own package", linestyle=(0, (1,1)))
+    plt.plot(integral_interval, fitted_values, label="Own package", linestyle=(0, (1, 1)))
     plt.plot(integral_interval, fitted_mod[0], label="Statsmodel package", linestyle=(0, (1, 3)))
     plt.legend()
     plt.plot()
     plt.show()
-    
-    

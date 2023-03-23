@@ -24,7 +24,7 @@ def test_bandwidth():
     print("init bw : ", 16 * np.std(X.dot(betas).to_numpy()) * n_ind ** (- 1. / (4 + len(X.columns))))
     print("bandwidth found by own package : ", KR.bw)
     print("Time to compute for our package :", time_end_own_package - time_start_own_package)
-    #fitted_values = KR.pred(x_new=integral_interval)
+    fitted_values = KR.pred(x_new=integral_interval)
 
     time_start_statsmod = time.time()
     mod = kernel_regression.KernelReg(Y["Y"], X.dot(betas).to_numpy(), var_type="c", reg_type="lc")
@@ -45,7 +45,10 @@ def test_bandwidth():
     
     
 def test_convergence():
-    
+    """
+    Do not use it : results are ok.
+    :return:
+    """
     np.random.seed(12345)
     n_test = 3
     n_sample = 10
@@ -85,10 +88,10 @@ def test_convergence():
                 best_KR_model = KR
 
         # Estimating \hat{\phi}
-        model = KernelReg(Y["Y"], X.dot(df_scaled_betas.loc[i].values).to_numpy(), var_type="c")
+        #model = KernelReg(Y["Y"], X.dot(df_scaled_betas.loc[i].values).to_numpy(), var_type="c")
         # pred = model.fit()[0]
 
-        pred = model.fit(integral_interval)[0]
+        #pred = model.fit(integral_interval)[0]
 
         ise = KR.ise(pred, link_func(integral_interval), integral_interval)
         df_ise.loc[i] = ise

@@ -39,7 +39,7 @@ class homogenous_PP():
         self.delta = 0
 
     def get_jump_time(self):
-        self.jump_time = np.random.exponential(self.intensity)
+        self.jump_time = np.clip(np.random.exponential(self.intensity), 0, 10e10)
 
 
 class Poisson_process():
@@ -68,7 +68,8 @@ class Poisson_process():
             self.Z = [1 for t in range(int(self.jump_time) + 1)] + [0 for t in range(
                 len(self.intensity) - int(self.jump_time) - 1)]  # +1, at risk
         self.N = [0 if t != int(self.jump_time) else 1 for t in range(len(self.intensity))]
-        self.delta = [1 if self.jump_time < self.jump_time_cens else 0][0]
+        self.delta = [1 if (self.jump_time < self.jump_time_cens and self.jump_time < self.max_time) else 0][0]
+
 
     def Lambda__(self, t):
         assert t <= self.max_time
@@ -84,15 +85,16 @@ class Poisson_process():
             hpp = homogenous_PP(self.max_intensity)
             hpp.get_jump_time()
             u = np.random.uniform(0, 1)
-            intensity_t_star = self.intensity[np.min([int(hpp.jump_time), len(self.intensity) - 1])]
-            t_star += hpp.jump_time - np.log(u) / self.max_intensity
+            intensity_t_star = self.intensity[np.min([int(hpp.jump_time) - 1, len(self.intensity) - 1])]
+            t_star += hpp.jump_time - (np.log(u) / self.max_intensity)
             u = np.random.uniform(0, 1)
+            if t_star > self.max_time:
+                self.jump_time = self.max_time
+                break
+
             if u < intensity_t_star / self.max_intensity:
                 self.jump_time = t_star
                 no_time = False
-            if t_star > self.max_time:
-                no_time = False
-                self.jump_time = self.max_time
 
         return self.jump_time
 
@@ -104,14 +106,16 @@ class Poisson_process():
             hpp = homogenous_PP(self.max_intensity_cens)
             hpp.get_jump_time()
             u = np.random.uniform(0, 1)
-            intensity_t_star = self.intensity[np.min([int(hpp.jump_time), len(self.intensity_cens) - 1])]
-            t_star += hpp.jump_time - np.log(u) / self.max_intensity_cens
+            intensity_t_star = self.intensity[np.min([int(hpp.jump_time) - 1, len(self.intensity_cens) - 1])]
+            t_star += hpp.jump_time - (np.log(u) / self.max_intensity_cens)
+            if t_star > self.max_time:
+                self.jump_time_cens = self.max_time
+                break
+
             if u < intensity_t_star / self.max_intensity_cens:
                 self.jump_time_cens = t_star
                 no_time = False
-            if t_star > self.max_time:
-                no_time = False
-                self.jump_time_cens = self.max_time
+
 
         return self.jump_time_cens
 

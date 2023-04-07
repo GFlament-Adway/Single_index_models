@@ -67,7 +67,7 @@ class Poisson_process():
         else:
             self.Z = [1 for t in range(int(self.jump_time) + 1)] + [0 for t in range(
                 len(self.intensity) - int(self.jump_time) - 1)]  # +1, at risk
-        self.N = [0 if t != int(self.jump_time) else 1 for t in range(len(self.intensity))]
+        self.N = [0 if (t != min(int(self.jump_time), int(self.jump_time_cens) - 1)) else 1 for t in range(len(self.intensity))]
         self.delta = [1 if (self.jump_time < self.jump_time_cens and self.jump_time < self.max_time) else 0][0]
 
 
